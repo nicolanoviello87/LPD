@@ -56,7 +56,7 @@ mammbs <- mammbs[mammbs$bs >= 0, ]
 #remove rows with NAs
 mammbs <- mammbs[complete.cases(mammbs), ]
 
-#number of species represented (2151)
+#number of species represented (491)
 species <- length(unique(mammbs[,"Binomial"]))
 
 mammbs = as.data.frame(mammbs)
@@ -82,6 +82,3 @@ mammbsfinal <- merge(mammbsgroups, mammbsmeans, by="group")
 ggplot(mammbsfinal, aes(bs, no_stress)) +
   geom_point(stat = "identity")+ 
   geom_smooth(method = "lm")
-
-
-
