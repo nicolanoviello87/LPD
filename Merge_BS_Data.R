@@ -1,4 +1,4 @@
-#Merge PanTHERIA and LPI by binomial
+#Merge Body Mass data and LPI by binomial
 setwd("C:/PhD")
 
 rm(list = ls())
@@ -111,5 +111,5 @@ ggplot(all, aes(bs, no_stress)) +
   geom_point(stat = "identity") + 
   geom_smooth(method = "glm") + 
   labs(x = "Body Mass (g)", y = "Avergae Number of Threats", size = 20) +
-  ggtitle("Body Size vs Threats for Vertebrates by Class") +
+  ggtitle("Body Size vs Threats for Vertebrates by Region") +
   facet_wrap(~Region, scales = "free")
