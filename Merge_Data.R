@@ -10,15 +10,9 @@ library(ggplot2)
 library(tidyverse)
 library(dplyr)
 library(tidyr)
-library(readr)
-library(readxl)
 library(binr)
 library(Hmisc)
 library(readxl)
-library(tidyr)
-library(dplyr)
-library(naniar)
-library(ggplot2)
 library(scales)
 library(data.table)
 library(rfishbase)
@@ -42,6 +36,8 @@ pan = as.data.frame(pan)
 fb = as.data.frame(fb)
 amp = as.data.frame(amp)
 amni = as.data.frame(amni)
+lpi <- lpi[lpi$Threat_status !="Unknown (no information)",]
+lpi <- lpi[lpi$Threat_status !="Unknown (large data set)",]
 
 #rename fishbase column
 colnames(fb)[2] <- "Binomial"
@@ -64,22 +60,21 @@ amph <- merge(lpi, amp, by="Binomial")
 amni <- merge(lpi, amni, by="Binomial")
 
 #reduce data frame to only those traits deemed useful
-mamm <- mamm[c(1, 2, 15, 23, 35, 47, 52, 145, 146, 147, 186, 192, 196, 203, 205, 206, 217)]
-fish <- fish[c(1, 2, 15, 23, 35, 47, 52, 145, 146, 147, 186, 198)]
-elt <- elt[c(1, 2, 15, 23, 35, 47, 52, 145, 146, 147, 186, 221)]
-amph <- amph[c(1, 2, 15, 23, 35, 47, 52, 145, 146, 147, 186, 208, 209, 215, 216)]
-amni <- amni[c(1, 2, 15, 23, 35, 47, 52, 145, 146, 147, 186, 187, 194, 195, 197, 199, 208)]
-
-#include only bonomial, ID, threat number and body mass
-mammbs <- mamm[c(1, 2, 11, 12)]
-fishbs <- fish[c(1, 2, 11, 12)]
-eltbs <- elt[c(1, 2, 11, 12)]
-amphbs <- amph[c(1, 2, 11, 12)]
-amnibs <- amni[c(1, 2, 11, 15)]
+mammbs <- mamm[c(1, 2, 15, 23, 30, 35, 47, 52, 186, 192)]
+fishbs <- fish[c(1, 2, 15, 23, 30, 35, 47, 52, 186, 198)]
+eltbs <- elt[c(1, 2, 15, 23, 30, 35, 47, 52, 186, 221)]
+amphbs <- amph[c(1, 2, 15, 23, 30, 35, 47, 52, 186, 208)]
+amnibs <- amni[c(1, 2, 15, 23, 30, 35, 47, 52, 186, 197)]
 
 #homogenise body mass column names
-colnames(mammbs)[4] <- "bs"; colnames(fishbs)[4] <- "bs"; colnames(eltbs)[4] <- "bs"; colnames(amphbs)[4] <- "bs"
-colnames(amnibs)[4] <- "bs"
+colnames(mammbs)[10] <- "bs"; colnames(fishbs)[10] <- "bs"; colnames(eltbs)[10] <- "bs";
+colnames(amphbs)[10] <- "bs"; colnames(amnibs)[10] <- "bs"
+
+mammbs$data <- "pan"
+fishbs$data <- "fish"
+eltbs$data <- "elt"
+amphbs$data <- "amph"
+amnibs$data <- "amni"
 
 #combine reduced dataframes
 all <- rbind.fill(mammbs, fishbs, eltbs, amphbs, amnibs)
@@ -88,31 +83,32 @@ all <- rbind.fill(mammbs, fishbs, eltbs, amphbs, amnibs)
 all <- all %>% distinct(ID, .keep_all = TRUE)
 
 #remove rows where body mass is less than 0
+all$bs = as.numeric(all$bs)
 all <- all[all$bs >= 0, ]
 
 #remove rows with NAs
 all <- all[complete.cases(all), ]
 
-#number of species represented (2151)
+#number of species represented (1759) and total time series (2023)
 species <- length(unique(all[,"Binomial"]))
 
-all = as.data.frame(all)
-all$bs = as.numeric(all$bs)
-all$no_stress = as.numeric(all$no_stress)
+ggplot(all, aes(bs, no_stress)) +
+  geom_point(stat = "identity") + 
+  geom_smooth(method = "glm") + 
+  labs(x = "Body Mass (g)", y = "Avergae Number of Threats", size = 20) +
+  ggtitle("Body Size vs Threats for Vertebrates by System") +
+  facet_wrap(~System, scales = "free")
 
-#order data frame by body size
-all <- all[order(all$bs, decreasing = TRUE),]
+ggplot(all, aes(bs, no_stress)) +
+  geom_point(stat = "identity") + 
+  geom_smooth(method = "glm") + 
+  labs(x = "Body Mass (g)", y = "Avergae Number of Threats", size = 20) +
+  ggtitle("Body Size vs Threats for Vertebrates by Class") +
+  facet_wrap(~Class, scales = "free")
 
-#divide data in to 50 equally sized groups
-all$group <- as.numeric(cut2(all$bs, g=50))
-
-#find average of body weight and number of threats within those groups
-groups <- aggregate(bs ~ group, all, mean)
-means <- aggregate(no_stress ~ group, all, mean)
-
-groups <- as.data.frame(groups)
-means <- as.data.frame(means)
-
-final <- merge(groups, means, by="group")
-
-plot(final$bs, final$no_stress)
+ggplot(all, aes(bs, no_stress)) +
+  geom_point(stat = "identity") + 
+  geom_smooth(method = "glm") + 
+  labs(x = "Body Mass (g)", y = "Avergae Number of Threats", size = 20) +
+  ggtitle("Body Size vs Threats for Vertebrates by Class") +
+  facet_wrap(~Region, scales = "free")
