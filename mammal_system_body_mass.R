@@ -3,6 +3,8 @@ setwd("C:/PhD")
 
 rm(list = ls())
 
+library(Matrix)
+library(MuMIn)
 library(plyr)
 library(ggplot2)
 library(tidyverse)
@@ -14,6 +16,8 @@ library(binr)
 library(Hmisc)
 library(data.table)
 library(scales)
+library(lme4)
+
 
 #read in datasets
 lpi <- read_xlsx("C:/PhD/LPI_Data/LPI.xlsx")
@@ -32,19 +36,19 @@ lpi <- lpi[lpi$Threat_status !="Unknown (large data set)",]
 #count stressors
 lpi$no_stress <- apply(lpi[145:147], 1, function(x) sum(!is.na(x)))
 
-
-
 #merge datasets and lpi
 mamm <- merge(lpi, pan, by="Binomial")
 
 #reduce data frame to only those traits deemed useful
-mammbs <- mamm[c(1, 2, 15, 23, 30, 35, 36, 37, 47, 52, 144, 186, 192, 196, 203, 205, 206, 217)]
+mammbs <- mamm[c(1, 2, 15, 23, 30, 35, 47, 52, 144, 186, 192, 196, 203, 205, 206, 217)]
 
 #rename body mass column
-colnames(mammbs)[13] <- "bs"
-colnames(mammbs)[18] <- "tl"
-
-mammbs$bs = as.numeric(mammbs$bs)
+colnames(mammbs)[11] <- "bs"
+colnames(mammbs)[12] <- "afb"
+colnames(mammbs)[13] <- "hr"
+colnames(mammbs)[14] <- "ibi"
+colnames(mammbs)[15] <- "ls"
+colnames(mammbs)[16] <- "tl"
 
 #remove rows where IDs are duplicated
 mammbs <- mammbs %>% distinct(ID, .keep_all = TRUE)
@@ -53,6 +57,7 @@ mammbs <- mammbs %>% distinct(ID, .keep_all = TRUE)
 mammbs$bs = as.numeric(mammbs$bs)
 mammbs <- mammbs[mammbs$bs >= 0, ]
 mammbs$bs <- log(mammbs$bs)
+
 #remove rows with NAs
 mammbs <- mammbs[complete.cases(mammbs), ]
 
@@ -82,9 +87,3 @@ ggplot(mammbs, aes(bs, no_stress)) +
   ggtitle("Body Size vs Threats for Mammals by Red List Category") +
   facet_wrap(~Red_list_category, scales = "free")
 
-ggplot(mammbs, aes(bs, no_stress)) +
-  geom_point(stat = "identity") +
-  stat_smooth(method = "glm") +
-  labs(x = "Body Mass (g)", y = "Average Number of Threats", size = 20) +
-  ggtitle("Body Size vs Threats for Mammals by Biome") +
-  facet_wrap(~T_biome, scales = "free")
