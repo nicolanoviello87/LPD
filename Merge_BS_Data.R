@@ -4,6 +4,7 @@ setwd("C:/PhD")
 rm(list = ls())
 
 install_github("ropensci/rfishbase")
+install.packages("MuMIn")
 
 library(plyr)
 library(ggplot2)
@@ -17,6 +18,7 @@ library(scales)
 library(data.table)
 library(rfishbase)
 library(readr)
+library(MuMIn)
 
 #read in datasets
 lpi <- read_xlsx("C:/PhD/LPI_Data/LPI.xlsx")
@@ -86,6 +88,7 @@ all <- all %>% distinct(ID, .keep_all = TRUE)
 #remove rows where body mass is less than 0
 all$bs = as.numeric(all$bs)
 all <- all[all$bs >= 0, ]
+all$bs <- log(all$bs)
 
 #remove rows with NAs
 all <- all[complete.cases(all), ]
@@ -96,20 +99,25 @@ species <- length(unique(all[,"Binomial"]))
 ggplot(all, aes(bs, no_stress)) +
   geom_point(stat = "identity") + 
   geom_smooth(method = "glm") + 
-  labs(x = "Body Mass (g)", y = "Avergae Number of Threats", size = 20) +
-  ggtitle("Body Size vs Threats for Vertebrates by System") +
+  labs(x = "Log Body Mass", y = "Number of Threats", size = 20) +
+  ggtitle("Log Body Size vs Threats for Vertebrates by System")  +
   facet_wrap(~System, scales = "free")
 
 ggplot(all, aes(bs, no_stress)) +
   geom_point(stat = "identity") + 
   geom_smooth(method = "glm") + 
-  labs(x = "Body Mass (g)", y = "Avergae Number of Threats", size = 20) +
-  ggtitle("Body Size vs Threats for Vertebrates by Class") +
+  labs(x = "Log Body Mass", y = "Number of Threats", size = 20) +
+  ggtitle("Log Body Size vs Threats for Vertebrates by Class") +
   facet_wrap(~Class, scales = "free")
 
 ggplot(all, aes(bs, no_stress)) +
   geom_point(stat = "identity") + 
   geom_smooth(method = "glm") + 
-  labs(x = "Body Mass (g)", y = "Avergae Number of Threats", size = 20) +
-  ggtitle("Body Size vs Threats for Vertebrates by Region") +
+  labs(x = "Log Body Mass", y = "Number of Threats", size = 20) +
+  ggtitle("Log Body Size vs Threats for Vertebrates by Region") +
   facet_wrap(~Region, scales = "free")
+
+#Poisson GLMs??
+
+model <- glm(formula=no_stress ~ System+bs + Region + GROMS_category + Red_list_category,
+             data = all, family=poisson)
