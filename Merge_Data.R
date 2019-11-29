@@ -1,4 +1,5 @@
-#Merge PanTHERIA and LPI by binomial
+#Merge Supplementary databases and LPI
+
 setwd("C:/PhD")
 
 rm(list = ls())
@@ -19,7 +20,7 @@ library(rfishbase)
 library(readr)
 
 #read in datasets
-lpi <- read_xlsx("C:/PhD/LPI_Data/LPI.xlsx")
+lpi <- read_xlsx("C:/PhD/LPI_Data/LPI_Threats.xlsx")
 elton <- read_xlsx("C:/PhD/Supplementary_Datasets/Elton_Traits/Elton_Traits.xlsx")
 pan <- read_xlsx("C:/PhD/Supplementary_Datasets/PanTHERIA/PanTHERIA.xlsx")
 amp <- read_csv("C:/PhD/Supplementary_Datasets/Amphibio/AmphiBIO_v1/AmphiBIO_v1.csv")
@@ -36,8 +37,6 @@ pan = as.data.frame(pan)
 fb = as.data.frame(fb)
 amp = as.data.frame(amp)
 amni = as.data.frame(amni)
-lpi <- lpi[lpi$Threat_status !="Unknown (no information)",]
-lpi <- lpi[lpi$Threat_status !="Unknown (large data set)",]
 
 #rename fishbase column
 colnames(fb)[2] <- "Binomial"
@@ -84,7 +83,9 @@ all <- all %>% distinct(ID, .keep_all = TRUE)
 
 #remove rows where body mass is less than 0
 all$bs = as.numeric(all$bs)
-all <- all[all$bs >= 0, ]
+all$bs[all$bs < 0] <- NA
+all$bs <- log(all$bs)
+all <- all[all$bs > 0, ]
 
 #remove rows with NAs
 all <- all[complete.cases(all), ]
@@ -92,23 +93,46 @@ all <- all[complete.cases(all), ]
 #number of species represented (1759) and total time series (2023)
 species <- length(unique(all[,"Binomial"]))
 
-ggplot(all, aes(bs, no_stress)) +
-  geom_point(stat = "identity") + 
-  geom_smooth(method = "glm") + 
-  labs(x = "Body Mass (g)", y = "Avergae Number of Threats", size = 20) +
-  ggtitle("Body Size vs Threats for Vertebrates by System") +
-  facet_wrap(~System, scales = "free")
+ggplot(all, aes(bs, no_stress, colour = Class)) +
+  geom_point(stat = "identity") +
+  stat_smooth(method = "glm", method.args = list(family = "poisson"), se=FALSE) +
+  labs(x = "Log Body Mass", y = "Number of Threats", size = 20) +
+  ggtitle("Body Size vs Threats by Class") + 
+  scale_colour_discrete(na.translate = F) 
 
-ggplot(all, aes(bs, no_stress)) +
-  geom_point(stat = "identity") + 
-  geom_smooth(method = "glm") + 
-  labs(x = "Body Mass (g)", y = "Avergae Number of Threats", size = 20) +
-  ggtitle("Body Size vs Threats for Vertebrates by Class") +
-  facet_wrap(~Class, scales = "free")
+ggplot(all, aes(bs, no_stress, colour = System)) +
+  geom_point(stat = "identity") +
+  stat_smooth(method = "glm", method.args = list(family = "poisson"), se=FALSE) +
+  labs(x = "Log Body Mass", y = "Number of Threats", size = 20) +
+  ggtitle("Body Size vs Threats by System") + ylim(0,4)+
+  scale_colour_discrete(na.translate = F)
 
-ggplot(all, aes(bs, no_stress)) +
-  geom_point(stat = "identity") + 
-  geom_smooth(method = "glm") + 
-  labs(x = "Body Mass (g)", y = "Avergae Number of Threats", size = 20) +
-  ggtitle("Body Size vs Threats for Vertebrates by Class") +
-  facet_wrap(~Region, scales = "free")
+ggplot(all, aes(bs, no_stress, colour = Region)) +
+  geom_point(stat = "identity") +
+  stat_smooth(method = "glm", method.args = list(family = "poisson"), se=FALSE) +
+  labs(x = "Log Body Mass", y = "Number of Threats", size = 20) +
+  ggtitle("Vertebrate Body Size vs Threats by Region") + ylim(0,4)+
+  scale_colour_discrete(na.translate = F)
+
+ggplot(all, aes(bs, no_stress, colour = Red_list_category)) +
+  geom_point(stat = "identity") +
+  stat_smooth(method = "glm", method.args = list(family = "poisson"), se=FALSE) +
+  labs(x = "Log Body Mass", y = "Average Number of Threats", size = 20) +
+  ggtitle("Vertebrate Body Size vs Threats by Red List Status") + ylim(0,3)+
+  scale_colour_discrete(na.translate = F)
+
+
+ggplot(all, aes(bs, no_stress, colour = GROMS_category)) +
+  geom_point(stat = "identity") +
+  stat_smooth(method = "glm", method.args = list(family = "poisson"), se=FALSE) +
+  labs(x = "Log Body Mass", y = "Number of Threats", size = 20) +
+  ggtitle("Vertebrate Body Size vs Threats by GROMS Category") +ylim(0,3)+
+  scale_colour_discrete(na.translate = F)
+
+ggplot(all, aes(bs, no_stress, colour = Trophic_level)) +
+  geom_point(stat = "identity") +
+  stat_smooth(method = "glm", method.args = list(family = "poisson"), se=FALSE) +
+  labs(x = "Log Body Mass", y = "Number of Threats", size = 20) +
+  ggtitle("Vertebrate Body Size vs Threats by Trophic Level") +ylim(0,3)+
+  scale_colour_discrete(na.translate = F)
+
