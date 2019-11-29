@@ -18,9 +18,17 @@ library(Hmisc)
 #read in xlsx file
 lpi <- read_xlsx("C:/PhD/LPI_Data/LPI.xlsx")
 
+#correct formatting
+lpi = as.matrix(lpi)
+lpi[lpi=="NULL"] <- NA
+lpi = as.data.frame(lpi)
+lpi <- lpi[lpi$Threat_status !="Unknown (no information)",]
+lpi <- lpi[lpi$Threat_status !="Unknown (large data set)",]
+
 lat <- lpi[c(31, 145:147)]
 
-lat[lat=="NULL"] <- NA
+#count stressors
+lpi$no_stress <- apply(lpi[145:147], 1, function(x) sum(!is.na(x)))
 
 #create new column with stressor count
 lat$na_count <- apply(lat[2:4], 1, function(x) sum(!is.na(x)))
