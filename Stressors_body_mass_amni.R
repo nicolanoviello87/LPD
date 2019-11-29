@@ -15,17 +15,13 @@ library(data.table)
 library(scales)
 
 #read in datasets
-lpi <- read_xlsx("C:/PhD/LPI_Data/LPI.xlsx")
+lpi <- read_xlsx("C:/PhD/LPI_Data/LPI_Threats.xlsx")
 amni <- read_csv("C:/PhD/Supplementary_Datasets/Amniote/Amniote_Database_Aug_2015.csv")
 
 #correct formatting
 lpi = as.matrix(lpi)
 lpi[lpi=="NULL"] <- NA
 lpi = as.data.frame(lpi)
-
-lpi <- lpi[lpi$Threat_status !="Unknown (no information)",]
-lpi <- lpi[lpi$Threat_status !="Unknown (large data set)",]
-
 amni = as.data.frame(amni)
 
 #count stressors
@@ -35,10 +31,10 @@ lpi$no_stress <- apply(lpi[145:147], 1, function(x) sum(!is.na(x)))
 amni<- merge(lpi, amni, by="Binomial")
 
 #reduce data frame to only those traits deemed useful
-amnibs <- amni[c(1, 2, 15, 23, 30, 35, 47, 52, 144, 186, 197)]
+amnibs <- amni[c(1, 2, 15, 23, 30, 35, 47, 52, 144, 181, 186, 197)]
 
 #homogenise body mass column names
-colnames(amnibs)[11] <- "bs"
+colnames(amnibs)[12] <- "bs"
 
 #remove rows where IDs are duplicated
 amnibs <- amnibs %>% distinct(ID, .keep_all = TRUE)
@@ -46,6 +42,7 @@ amnibs <- amnibs %>% distinct(ID, .keep_all = TRUE)
 #remove rows where body mass is less than 0
 amnibs$bs = as.numeric(amnibs$bs)
 amnibs <- amnibs[amnibs$bs >= 0, ]
+amnibs$bs <- log(amnibs$bs)
 
 #remove rows with NAs
 amnibs <- amnibs[complete.cases(amnibs), ]
@@ -53,30 +50,38 @@ amnibs <- amnibs[complete.cases(amnibs), ]
 #number of species represented (1434) and total time series (5058)
 species <- length(unique(amnibs[,"Binomial"]))
 
-ggplot(amnibs, aes(bs, no_stress)) +
+ggplot(amnibs, aes(bs, no_stress, colour = System)) +
   geom_point(stat = "identity") +
-  stat_smooth(method = "glm") +
-  labs(x = "Body Mass (g)", y = "Average Number of Threats", size = 20) +
-  ggtitle("Body Size vs Threats for Amniotes by System") +
-  facet_wrap(~System, scales = "free")
+  stat_smooth(method = "glm", method.args = list(family = "poisson"), se=FALSE) +
+  labs(x = "Log Body Mass", y = "Average Number of Threats", size = 20) +
+  ggtitle("Amniote Body Size vs Threats by System") +ylim(0,3)+
+  scale_colour_discrete(na.translate = F)
 
-ggplot(amnibs, aes(bs, no_stress)) +
+ggplot(amnibs, aes(bs, no_stress, colour = Region)) +
   geom_point(stat = "identity") +
-  stat_smooth(method = "glm") +
-  labs(x = "Body Mass (g)", y = "Average Number of Threats", size = 20) +
-  ggtitle("Body Size vs Threats for Amniotes by GROMS Category") +
-  facet_wrap(~GROMS_category, scales = "free")
+  stat_smooth(method = "glm", method.args = list(family = "poisson"), se=FALSE) +
+  labs(x = "Log Body Mass", y = "Number of Threats", size = 20) +
+  ggtitle("Amniote Body Size vs Threats by Region") +ylim(0,3)+
+  scale_colour_discrete(na.translate = F)
 
-ggplot(amnibs, aes(bs, no_stress)) +
+ggplot(amnibs, aes(bs, no_stress, colour = Red_list_category)) +
   geom_point(stat = "identity") +
-  stat_smooth(method = "glm") +
-  labs(x = "Body Mass (g)", y = "Average Number of Threats", size = 20) +
-  ggtitle("Body Size vs Threats for Amniotes by Region") +
-  facet_wrap(~Region, scales = "free")
+  stat_smooth(method = "glm", method.args = list(family = "poisson"), se=FALSE) +
+  labs(x = "Log Body Mass", y = "Average Number of Threats", size = 20) +
+  ggtitle("Amniote Body Size vs Threats by Red List Status") +ylim(0,3)+
+  scale_colour_discrete(na.translate = F)
 
-ggplot(amnibs, aes(bs, no_stress)) +
+ggplot(amnibs, aes(bs, no_stress, colour = GROMS_category)) +
   geom_point(stat = "identity") +
-  stat_smooth(method = "glm") +
-  labs(x = "Body Mass (g)", y = "Average Number of Threats", size = 20) +
-  ggtitle("Body Size vs Threats for Amniotes by Red List Category") +
-  facet_wrap(~Red_list_category, scales = "free")
+  stat_smooth(method = "glm", method.args = list(family = "poisson"), se=FALSE) +
+  labs(x = "Log Body Mass", y = "Number of Threats", size = 20) +
+  ggtitle("Amniote Body Size vs Threats by GROMS Category") +ylim(0,3)+
+  scale_colour_discrete(na.translate = F)
+
+ggplot(amnibs, aes(bs, no_stress, colour = Trophic_level)) +
+  geom_point(stat = "identity") +
+  stat_smooth(method = "glm", method.args = list(family = "poisson"), se=FALSE) +
+  labs(x = "Log Body Mass", y = "Number of Threats", size = 20) +
+  ggtitle("Amniote Body Size vs Threats by Trophic Level") +ylim(0,3)+
+  scale_colour_discrete(na.translate = F)
+
