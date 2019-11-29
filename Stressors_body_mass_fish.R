@@ -10,15 +10,8 @@ library(ggplot2)
 library(tidyverse)
 library(dplyr)
 library(tidyr)
-library(readr)
 library(readxl)
-library(binr)
 library(Hmisc)
-library(readxl)
-library(tidyr)
-library(dplyr)
-library(naniar)
-library(ggplot2)
 library(scales)
 library(data.table)
 library(rfishbase)
@@ -26,17 +19,13 @@ library(readr)
 library(writexl)
 
 #read in datasets
-lpi <- read_xlsx("C:/PhD/LPI_Data/LPI.xlsx")
+lpi <- read_xlsx("C:/PhD/LPI_Data/LPI_threats.xlsx")
 fb <- brains(species_list = NULL, fields = NULL, server = NULL)
 
 #correct formatting
 lpi = as.matrix(lpi)
 lpi[lpi=="NULL"] <- NA
 lpi = as.data.frame(lpi)
-
-lpi <- lpi[lpi$Threat_status !="Unknown (no information)",]
-lpi <- lpi[lpi$Threat_status !="Unknown (large data set)",]
-
 fb = as.data.frame(fb)
 
 #rename fishbase column
@@ -52,15 +41,18 @@ fb$Binomial <- sub(" ", "_", fb$Binomial)
 fish <- merge(lpi, fb, by="Binomial")
 
 #reduce data frame to only those traits deemed useful
-fishbs <- fish[c(1, 2, 15, 23, 30, 35, 40, 41, 42, 47, 52, 144, 186, 198)]
+fishbs <- fish[c(1, 2, 15, 23, 30, 35, 47, 52, 144, 186, 198)]
 
 #homogenise body mass column names
-colnames(fishbs)[14] <- "bs"
+colnames(fishbs)[11] <- "bs"
 
 #remove rows where IDs are duplicated
 fishbs <- fishbs %>% distinct(ID, .keep_all = TRUE)
 
 #remove rows where body mass is less than 0
+fishbs$bs = as.numeric(fishbs$bs)
+fishbs <- fishbs[fishbs$bs >= 0, ]
+fishbs$bs <- log(fishbs$bs)
 fishbs <- fishbs[fishbs$bs >= 0, ]
 
 #remove rows with NAs
@@ -69,35 +61,40 @@ fishbs <- fishbs[complete.cases(fishbs), ]
 #number of species represented (253)
 species <- length(unique(fishbs[,"Binomial"]))
 
-fishbs = as.data.frame(fishbs)
-fishbs$bs = as.numeric(fishbs$bs)
-fishbs$no_stress = as.numeric(fishbs$no_stress)
-
-ggplot(fishbs, aes(bs, no_stress)) +
+ggplot(fishbs, aes(bs, no_stress, colour = System)) +
   geom_point(stat = "identity") +
-  stat_smooth(method = "glm") +
-  labs(x = "Body Mass (g)", y = "Average Number of Threats", size = 20) +
-  ggtitle("Body Size vs Threats for Fish by System") +
-  facet_wrap(~System, scales = "free")
+  stat_smooth(method = "glm", method.args = list(family = "poisson"), se=FALSE) +
+  labs(x = "Log Body Mass", y = "Number of Threats", size = 20) +
+  ggtitle("Fish Body Size vs Threats by System") + ylim(0,3)+
+  scale_colour_discrete(na.translate = F) + scale_colour_manual(values=cbbPalette)
 
-ggplot(fishbs, aes(bs, no_stress)) +
+ggplot(fishbs, aes(bs, no_stress, colour = Region)) +
   geom_point(stat = "identity") +
-  stat_smooth(method = "glm") +
-  labs(x = "Body Mass (g)", y = "Average Number of Threats", size = 20) +
-  ggtitle("Body Size vs Threats for Fish by GROMS Category") +
-  facet_wrap(~GROMS_category, scales = "free")
+  stat_smooth(method = "glm", method.args = list(family = "poisson"), se=FALSE) +
+  labs(x = "Log Body Mass", y = "Number of Threats", size = 20) +
+  ggtitle("Fish Body Size vs Threats by Region") + ylim(0,3)+
+  scale_colour_discrete(na.translate = F) + scale_colour_manual(values=cbbPalette)
 
-ggplot(fishbs, aes(bs, no_stress)) +
+ggplot(fishbs, aes(bs, no_stress, colour = Red_list_category)) +
   geom_point(stat = "identity") +
-  stat_smooth(method = "glm") +
-  labs(x = "Body Mass (g)", y = "Average Number of Threats", size = 20) +
-  ggtitle("Body Size vs Threats for Fish by Red List Category") +
-  facet_wrap(~Red_list_category, scales = "free")
+  stat_smooth(method = "glm", method.args = list(family = "poisson"), se=FALSE) +
+  labs(x = "Log Body Mass", y = "Average Number of Threats", size = 20) +
+  ggtitle("Fish Body Size vs Threats by Red List Status") + ylim(0,3)+
+  scale_colour_discrete(na.translate = F) + scale_colour_manual(values=cbbPalette)
 
-ggplot(fishbs, aes(bs, no_stress)) +
+ggplot(fishbs, aes(bs, no_stress, colour = GROMS_category)) +
   geom_point(stat = "identity") +
-  stat_smooth(method = "glm") +
-  labs(x = "Body Mass (g)", y = "Average Number of Threats", size = 20) +
-  ggtitle("Body Size vs Threats for Fish by Realm") +
-  facet_wrap(~M_realm, scales = "free")
+  stat_smooth(method = "glm", method.args = list(family = "poisson"), se=FALSE) +
+  labs(x = "Log Body Mass", y = "Number of Threats", size = 20) +
+  ggtitle("Fish Body Size vs Threats by GROMS Category") + ylim(0,3)+
+  scale_colour_discrete(na.translate = F) + scale_colour_manual(values=cbbPalette)
 
+ggplot(fishbs, aes(bs, no_stress, colour = Class)) +
+  geom_point(stat = "identity") +
+  stat_smooth(method = "glm", method.args = list(family = "poisson"), se=FALSE) +
+  labs(x = "Log Body Mass", y = "Number of Threats", size = 20) +
+  ggtitle("Fish Body Size vs Threats by Class") + ylim(0,3) +
+  scale_colour_discrete(na.translate = F) +scale_colour_manual(values=cbbPalette)
+
+cbPalette <- c("#999999", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7")
+cbbPalette <- c("#000000", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7")
