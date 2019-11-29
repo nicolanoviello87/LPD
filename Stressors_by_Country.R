@@ -1,11 +1,6 @@
-install.packages("raster")
-install.packages("ISOcodes")
-install.packages("ggmap")
-install.packages("maps")
-install.packages("maptools")
-install.packages("rworldxtra")
-install.packages("Rcolombos")
-install.packages("rworldmap")
+setwd("C:/PhD")
+
+
 library(rworldmap)
 library(RColorBrewer)
 library(rworldxtra)                  
@@ -14,24 +9,35 @@ library(maptools)
 library(raster)
 library(ISOcodes)
 library(ggmap)
+library(dplyr)
+library(readxl)
+library(Rcolombos)
 
+#read in datasets
 lpi <- read_xlsx("C:/PhD/LPI_Data/LPI.xlsx")
+
+#correct formatting
 lpi = as.matrix(lpi)
 lpi[lpi=="NULL"] <- NA
 lpi = as.data.frame(lpi)
+lpi <- lpi[lpi$Threat_status !="Unknown (no information)",]
+lpi <- lpi[lpi$Threat_status !="Unknown (large data set)",]
 
-lpi$non_na <- apply(lpi[145:147], 1, function(x) sum(!is.na(x)))
+#count stressors
+lpi$no_stress <- apply(lpi[145:147], 1, function(x) sum(!is.na(x)))
 
 country <- lpi[c(28, 186)]
 
 country = as.data.frame(country)
 
-mean <- tapply(country$non_na, country$Country, mean)
+mean <- tapply(country$no_stress, country$Country, mean)
 
 mean = as.data.frame(mean)
 mean$country <- rownames(mean)
 
-map <- merge(worldmap, mean, joinCode="NAME", nameJoinColumn="country")
+WorldData <- map_data('world') %>% filter(region != "Antarctica") %>% fortify
+
+map <- merge(WorldData, mean, joinCode="NAME", nameJoinColumn="country")
 
 spdf <- joinCountryData2Map(mean, worldmap, joinCode="NAME", nameJoinColumn="country")
 
